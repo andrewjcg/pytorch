@@ -1527,10 +1527,13 @@ int listNe<at::Tensor>(Stack& stack) {
   return 0;
 }
 
+template <class T>
 Operation listList(const Node* node) {
   return [=](Stack& stack) {
-    // Intentional no-op, needed to match Python semantics for list(iterable),
-    // but in JIT these will already be lists
+    c10::ListPtr<T> a = c10::make_list<T>();
+    pop(stack, a);
+    c10::ListPtr<T> b = a.copy();
+    push(stack, b);
     return 0;
   };
 }
@@ -1923,7 +1926,8 @@ RegisterOperators reg2({
 #undef CREATE_MUTABLE_LIST_OPS
 
 #define CREATE_LIST_OPS(decl_type, c_type)                                          \
-  Operator("aten::len(" decl_type "[] a) -> int", listLen<c_type::value_type>),     \
+  Operator(                                                                         \
+      "aten::len(" decl_type "[] a) -> int", listLen<c_type::value_type>),          \
       Operator(                                                                     \
           "aten::add(" decl_type "[] a, " decl_type "[] b) -> " decl_type           \
           "[]",                                                                     \
@@ -1933,7 +1937,9 @@ RegisterOperators reg2({
           "[] l, int start, int end=9223372036854775807, int step=1) -> " decl_type \
           "[]",                                                                     \
           listSlice<c_type::value_type>),                                           \
-      Operator("aten::list(" decl_type "[] l) -> " decl_type "[]", listList),       \
+      Operator(                                                                     \
+          "aten::list(" decl_type "[](a!) l) -> " decl_type "[]",                   \
+          listList<c_type::value_type>),                                            \
       Operator(                                                                     \
           "aten::mul(" decl_type "[] l, int n) -> " decl_type "[]",                 \
           listMulIntLeft<c_type::value_type>),                                      \
@@ -2712,7 +2718,6 @@ RegisterOperators reg3({
     Operator(
         "aten::__upsample_bilinear(Tensor input, int[]? size = None, int[]? scale_factor = None) -> Tensor",
         upsample_bilinear_op),
-
 });
 
 at::Tensor leaky_relu(const at::Tensor& tensor, double scalar) {

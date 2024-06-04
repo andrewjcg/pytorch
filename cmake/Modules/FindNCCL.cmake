@@ -68,16 +68,19 @@ if(NCCL_FOUND)  # obtaining NCCL version and some sanity checks
 
         int x;
         ncclGetVersion(&x);
+        std::cout << x << ',' << NCCL_VERSION_CODE << std::endl;
         return x == NCCL_VERSION_CODE;
       }
 ")
     try_run(NCCL_VERSION_MATCHED compile_result ${PROJECT_BINARY_DIR} ${file}
           RUN_OUTPUT_VARIABLE NCCL_VERSION_FROM_HEADER
+          COMPILE_OUTPUT_VARIABLE build_output
           CMAKE_FLAGS  "-DINCLUDE_DIRECTORIES=${NCCL_INCLUDE_DIRS}"
           LINK_LIBRARIES ${NCCL_LIBRARIES})
     if (NOT NCCL_VERSION_MATCHED)
       message(FATAL_ERROR "Found NCCL header version and library version do not match! \
-(include: ${NCCL_INCLUDE_DIRS}, library: ${NCCL_LIBRARIES}) Please set NCCL_INCLUDE_DIR and NCCL_LIB_DIR manually.")
+(include: ${NCCL_INCLUDE_DIRS}, library: ${NCCL_LIBRARIES}) Please set NCCL_INCLUDE_DIR and NCCL_LIB_DIR manually. \
+${build_output}  \n ${NCCL_VERSION_FROM_HEADER}")
     endif()
     message(STATUS "NCCL version: ${NCCL_VERSION_FROM_HEADER}")
   else()
